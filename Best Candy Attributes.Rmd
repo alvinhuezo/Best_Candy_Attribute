@@ -1,0 +1,336 @@
+---
+title: "Best Candy Attributes"
+author: "Alvin Huezo"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  prettydoc::html_pretty:
+    theme: leonids
+    
+  
+    toc: yes
+   
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+## Load your packages here , your packages will be hidden but make sure that you mention which packages you used in your document
+library(stargazer)
+library(knitr)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(gridExtra)
+library(prettydoc)
+library(readr)
+library(tidyverse)
+library(kableExtra)
+library(corrplot)
+library(ggthemes)
+library(ggridges)
+library(RColorBrewer)
+library(ggrepel)
+library(ggdendro)
+library(rpart)
+library(car)
+library(psych)
+```
+
+
+# Introduction and motivation:
+
+<center>
+
+![](https://media.giphy.com/media/W1a1PYGoAAqZY3oOrD/giphy.gif)
+
+</center>
+
+My project will be answering the question "What makes the best candy...the best"? Although it may seem subjective, I will be taking an analytical approach to determine what factors and variable that go into a variety of assorted candies determines their favorability and appeal. I believe that is an interesting question to attempt to answer because the preference for candy seems to be very personal or random, some people may prefer sweet, some choclate, some soft candy, and some cheap candy. I believe that most people with a sweet tooth will prefer choclaty candies and without nuts (due to allergies). 
+
+However I have attached with a few articles and blogs with varying views as to which candy reigns supreme.
+
+
+https://www.eonline.com/de/news/476338/our-definitive-list-of-the-best-and-worst-halloween-candy-ranked
+Apart from their number 1 candy being "Anything King-sized", this website ranks Reese's, Butter Finger, Starburst, Snickers, and Sourpatch as the leading candies respectivly.
+
+
+https://www.ranker.com/crowdranked-list/the-best-candy-ever-made
+A website dedicated to rankings, this website puts Twix, Kit Kat, and Reese's as the top three candies.
+
+https://www.thrillist.com/eat/nation/best-halloween-candy
+As a food blog site, Thrillest gives some very valuable insight into what they believe is the best candy. In order from one to five;
+
+1. Reese's
+
+2. Twix
+
+3. Snickers
+
+4. KitKat
+
+5. Butterfingers
+
+
+> Noteworthy take about these websites (except for Ranker.com) is that there is no info as too how many people were surveyed or what factors were takin into consideration when decideing the best candy apart from the author's personal preference.
+
+# Data Set 
+
+Data was collected by creating a website where participants were shown presenting two fun-sized candies and asked to click on the one they would prefer to receive. In total, more than 269 thousand votes were collected from 8,371 different IP addresses. I believe that I have adequate data to unearth some compelling analysis. Of course since I was not in charge of the data collection, I am unsure of the ages of the participants and if that played a role in the data and analysis that I will be conducting.
+
+![](https://media.giphy.com/media/J3LnsmKkcpTltWCB2j/giphy.gif)
+ 
+candy-data.csv includes attributes for each candy along with its ranking. For binary variables, 1 means yes, 0 means no. The data contains the following fields:
+
+The variables from my dataset includes the following:
+
+
+
+Variable Name | Variable Meaning
+------------- | -------------
+chocolate | Does it contain chocolate?
+fruity | Is it fruit flavored?
+caramel | Is there caramel in the candy?
+peanutalmondy | Does it contain peanuts, peanut butter or almonds?
+nougat | Does it contain nougat?
+crispedricewafer | Does it contain crisped rice, wafers, or a cookie component?
+hard| Is it a hard candy?
+pluribus | Is it one of many candies in a bag or box?
+sugarpercent | The percentile of sugar it falls under within the data set.
+pricepercent| The unit price percentile compared to the rest of the set.
+winpercent | The overall win percentage according to 269,000 matchups.
+ 
+
+
+
+
+
+
+```{r, results='asis'}
+candy.data <- read.csv("candy-data.csv",stringsAsFactors = FALSE)
+stargazer(candy.data ,type = "html")
+# use stargazer to do a table of the summary statistics of your dataset 
+
+
+
+
+candyrank<-cbind(candy.data$competitorname , candy.data$winpercent)
+
+kable(candyrank[order(-candy.data$winpercent),],caption = "This is the Ranking List of Best Candy in Order from #1") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "center") %>%
+    kable_styling(bootstrap_options = "condensed") %>%
+    kable_styling(bootstrap_options = "bordered") %>%
+    scroll_box(width = "900px", height = "500px")
+```
+Here is a scrollable list of the candies ranked by win percent, with Reese's Peanut Butter Cup coming in first place and Nik L Nip coming in last.
+
+It is interesting to note that the top ten candies are all chocolate flavored.
+
+
+
+
+# Graphs, Charts and Visual Data
+
+### Multicolinearity Between variables
+```{r}
+candydatacor<-cor(candy.data[,2:13])
+corrplot(candydatacor)
+
+
+```
+
+In this correlation matrix, one can see that the variables in the data have varying varying levels of correlations with other variables. For example, there is a strong negative correlation between candies that are chocolate and candies that are fruit-flavored. A candy will either be chocolate or fruit-flavored, but not both.
+
+
+### Choclate And Peanut Butter/Almonds
+```{r}
+
+candyFeatures <- candy.data %>% select(2:10)
+
+candyFeatures[] <- lapply(candyFeatures, as.logical)
+
+
+ggplot(candyFeatures, aes(x = chocolate,
+                          fill = peanutyalmondy )) + 
+    geom_bar(position = "dodge", size = 1) + 
+    facet_wrap(c("peanutyalmondy")) + 
+    scale_fill_manual(values=c("chocolate4", 
+                               "darkgoldenrod")) + 
+    labs(title = "Are Top Chocolate candies more likely to have Peanut Butter", 
+        x = "Is the candy chocolate?", 
+        y = "# of candies") + 
+    theme(legend.position = c(.5, 0.85), 
+          strip.background = element_blank(),
+          strip.text.x = element_blank())  
+
+
+```
+
+Adding on from the top candies being choclate, there were divides as to wether these choclates contained peanut butter flavor/ingredients. More candies that have Peanut Butter/Almonds tend to be Chocolate as well. And about half of all chocolates have peanut butter/ almonds. More of this graph will be explained in my regression model.
+
+### Do Numerical Variables have an Effect on the Win Rate
+```{r}
+p <- ggplot(candy.data[-1], aes(x=candy.data$winpercent, y=candy.data$sugarpercent, label = candy.data$competitorname, group=candy.data$chocolate)) + coord_flip() + theme(legend.position="none") + geom_text(size=2, check_overlap = T) +
+geom_hline(aes(yintercept = mean(candy.data$sugarpercent)))+ xlab("Win Percentage")+ylab("Sugar Percentage")+ggtitle("Sugar Percentage and Win Rate")+  theme(axis.text.y = element_text(size=10)) +  scale_x_continuous()
+
+p
+
+cor(candy.data$winpercent,candy.data$sugarpercent)
+
+
+q <- ggplot(candy.data[-1], aes(x=candy.data$winpercent, y=candy.data$pricepercent, label = candy.data$competitorname, group=candy.data$chocolate)) + coord_flip() + theme(legend.position="none") + geom_text(size=2, check_overlap = T) +
+geom_hline(aes(yintercept = mean(candy.data$pricepercent)))+ xlab("Win Percentage")+ylab("Price Percentage")+ggtitle("Price Percentage and Win Rate")+  theme(axis.text.y = element_text(size=10)) +  scale_x_continuous() 
+
+q
+cor(candy.data$winpercent,candy.data$pricepercent)
+
+```
+
+There does not seem to be strong correlations visually or numerically between winrate and sugar percentage or win rate and price percentage.
+
+
+#  Methodology/Empirical Model:
+I will be running three regression models. The first basic model will be the observing the win percentage with the brands to see exactly how much of the variables in our data play a role in determing which candy is best.
+
+From the data section, I know that chocholate candies dominated the the top scores for winning as a favorite. With this information, I will run a second analysis on the win percentage taking into account chocolate features and fruity-flavor feature (since it is third highest). I am interested inseeing if these too are the best attributes together to have the best candy since they both have the high influence in the win rate.
+
+My third model will mimic the same idea as model 2, but fruit-flavor will be replaced with peanut butter/almond, a more common cmbination found in candy. But is it more common in the best candies?
+
+My fourth model will exam the top 3 influencers of the win rate (excluding the fruity variable)
+
+
+
+### Model to Find Most Influential Variable
+$$ Win_Percentage = \beta_0+\beta_1*Choclate +\beta_2*fruity + \beta_3*Caramel+\beta_4*Peanut Butter/Almonds +\beta_5*Nougat+\beta_6*Crispy Rice Wafer+\beta_7* Hard +\beta_8* Bar +\beta_9*Pluribus+ \beta_10* Sugar Percentage +\beta_11*Price Perecent+\beta_12+u$$
+```{r}
+m1 <-  lm(winpercent ~ ., data = candy.data[-1]) 
+summary(m1)
+```
+
+
+Based on this Model, it seems that chocolate, fruity, and peanutyalmondy are the top 3 variables with significanty values in determining the win rate of a candy, and ultimatley, the best candy.
+
+### Model with Chocolate and Fruit-Flavor
+$$ Win_Percentage = \beta_0+\beta_1*Choclate + \beta_2*Fruity Flavor+u$$
+$$ Win_Percentage = \beta_0+\beta_1*Choclate *Fruity Flavor+u$$
+```{r}
+m2<-lm(winpercent ~ chocolate + fruity, data = candy.data) 
+m2.5<-lm(winpercent ~ chocolate * fruity, data = candy.data) 
+stargazer(m2,m2.5,type = "text")
+```
+
+This regression model highlights the fact that although some variables have a significant effect on the win rate, a combination of those variables does not automatically make the win rate higher.
+
+
+
+### Model with Chocolate, Peanut Butter/Almond, and Sugar Percentage
+$$ Win_Percentage = \beta_0+\beta_1*Choclate + \beta_2Peanut Butter/Almonds+\beta_3*Sugar Percentage+u$$
+$$ Win_Percentage = \beta_0+\beta_1*Choclate*Peanut Butter/Almonds+\beta_3*Sugar Percentage+u$$
+```{r}
+m3 <-  lm(winpercent ~ chocolate + peanutyalmondy + sugarpercent, data = candy.data) 
+m3.5<-lm(winpercent ~ chocolate * peanutyalmondy + sugarpercent, data = candy.data)
+
+stargazer(m3,m3.5,type = "text")
+```
+
+
+Although Chocolate and Peanut Butter/Almond are significant variables to the win rate of a candy, The combination of both variable has a 3 percent higher win rate than just choclate candy and 10 percent higher win rate than almond/peanut butter candies with no chocolate.
+
+
+
+
+
+### Model with Chocolate, Caramel,Peanut Butter/Almond, Rice Wafer, Bar and Sugar Percentage
+
+$$ Win_Percentage = \beta_0+\beta_1*Choclate + \beta_2*Caramel+\beta_3*Peanut Butter/Almonds + \beta_4*Crispy Rice Wafer +\beta_5* Bar +\beta_6* Sugar Percentage +u$$
+
+```{r}
+
+m4 <-  lm(winpercent ~ chocolate + caramel + peanutyalmondy +crispedricewafer + bar+sugarpercent, data = candy.data) 
+
+stargazer(m1,m2,m3,m4,type = "text")
+```
+
+# Inference Tests
+
+## F-Test
+
+```{r}
+
+myH0 <- c("sugarpercent", "pricepercent" ) # vector with the names of the variables that you are testing 
+m4.5 <-  lm(winpercent ~ chocolate + caramel + peanutyalmondy +crispedricewafer + bar+sugarpercent+ pricepercent, data = candy.data) 
+
+
+linearHypothesis(m4.5, myH0)
+```
+
+This shows that in this case we **REJECT the null hypothesis**, that the coefficients are jointly zero. 
+
+```{r}
+myH02 <- c("caramel", "peanutyalmondy" )
+linearHypothesis(m4, myH02)
+```
+
+This shows that in this case we **REJECT the null hypothesis**, that the coefficients are jointly zero. 
+
+```{r}
+myH03 <- c("chocolate", "bar" )
+linearHypothesis(m4, myH03)
+```
+
+This shows that in this case we **REJECT the null hypothesis**, that the coefficients are jointly zero. 
+
+
+## Dummy Variable Test
+```{r}
+sugarg<- c(0.011,0.220,0.732,0.988)
+candy.data$sugargr<-cut( candy.data$sugarpercent, sugarg )
+
+kable(table(candy.data$sugargr), #caption = "Age groups", 
+      col.names = c("Sugar Percentile", "Freq"))
+
+candy.data$sugargr<- relevel(candy.data$sugargr,"(0.732,0.988]")
+
+m6<-lm(winpercent ~ chocolate + caramel + peanutyalmondy +crispedricewafer + bar + sugargr , candy.data)
+
+stargazer(m6, type = "text", covariate.labels = c("Chocolate", "Caramel", "Peanut Butter/Almond",  "Crisped Rice Wafer","Bar Candy", "Less than 25Percentil Sugar", "Between 25 and 50 percentil Sugar"))
+
+
+
+```
+
+High sugar-content candies(75-99 percentile) had a higher significance than low sugar-content candies. Statistically, Candies in the low percentile of sugar percentage (<25) resulted in win rates 7 percent lower than high sugared candies. Candies in the mid range resulted in 6.9 percent lower win rates.
+
+
+
+# Conclusion
+>Throught the models, charts, and inference tests, I have ultimatly focused on three distinct attributes that determines the success of a candy.
+Those three attributes are; Chocolate, Peanut Butter/Almonds, and Sugar Percentage.
+In the beginning of my data analysis I found out that a variety of the top winning candies were chocolate flavored based on the brand and name. Afterwards, identifying correlations between the variables showed that some variables/attributes mesh well together like choclate and Peanut Butter, and some variables did not mix well together like choclate and fruit-flavored candies( it sounds unappettizing just to hear that combination). These early analysis aided in our regression model analysis because it allowed us to infer not only how well variables individually impacted the win rate, but also how well a combination of these variables impact the win rate. That being said, although Chocolate, Peanut Butter/Almond, and Sugar Percentage and the best indicator in determing a succesful candy, An even better candy would be Chocolate WITH Peanut Butter/Almond with a high percentage of Sugar. 
+
+
+
+>In the introduction of this project, I had stated that candies containing nuts like peanuts and almonds would likely not have a great association with the best candy due to people with nut allergies, but I was wrong. The best candy will most likely contain nuts. My results also are in agreement with the outside sources that I researched. The articles/blogs that i covered earlier all have Reese's as the number one candy. Reese's is known for its combination of Chocolate and Peanut Butter. It must be a very complimentary taste. 
+
+
+> I believe that this project has a few areas of improvement. One of the biggest issues that I ran into has to do with the data itself. Earlier I mentioned that the win rate variable was recorded by votes in a online candy competition website. Although that is a great manner to collect unbiased data, the way the question was phrased could have had some biasedness in the candies' win rate. Instead of asking for the best candy out of the two options presented, people were asked "which would you prefer as a trick-or-treater?" People's candy preference may change if they are just picturing one day (Halloween) out of the whole year compared to general preference. Also, as a trick-or-treater, the price percentage variable becomes irrelevent since you would not expect to pay for the candy.
+Another issue with the data was that some candy were essentially the same execept for a slight variation. This created duplicates of my data. For Example, Reese's Miniatures and Reese's Pieces had the same attributes as candies until the sugar and price percentage. Also some of these products may have been limited-time only variations, which also could affect preference. To improve this, I would have to clean the data further to limit only one vartion of essentially the same candy.
+
+
+
+# Works Cited
+https://www.kaggle.com/fivethirtyeight/the-ultimate-halloween-candy-power-ranking
+
+
+https://www.thrillist.com/eat/nation/best-halloween-candy
+
+
+https://www.ranker.com/crowdranked-list/the-best-candy-ever-made
+
+
+https://media.giphy.com/media/W1a1PYGoAAqZY3oOrD/giphy.gif
+
+
+https://media.giphy.com/media/J3LnsmKkcpTltWCB2j/giphy.gif
+
+
+https://www.eonline.com/de/news/476338/our-definitive-list-of-the-best-and-worst-halloween-candy-ranked
